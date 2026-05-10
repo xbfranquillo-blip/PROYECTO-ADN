@@ -3,13 +3,8 @@ import { GoogleGenAI } from "@google/genai";
 const SYSTEM_INSTRUCTION = "Actúa como un profesor experto de Agentes de Defensa, Mecanismo y Nutrición. Tu misión es sintetizar información de Murray (Microbiología), Apt Baruch (Parasitología) y Oubiña (Virología). Responde con rigor científico, brevedad y claridad. Cita las fuentes cuando sea posible.";
 
 // Initialize Gemini directly in the frontend as per skill guidelines
-const aiClient = (() => {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    console.warn("GEMINI_API_KEY is not defined in the environment.");
-  }
-  return new GoogleGenAI({ apiKey: key || "" });
-})();
+// The platform shims process.env.GEMINI_API_KEY automatically for React/Vite apps
+const aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export const chatWithAI = async (message: string, history: any[] = []) => {
   try {
@@ -21,10 +16,8 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
       { role: 'user', parts: [{ text: message }] }
     ];
 
-    console.log("Calling Gemini with contents:", JSON.stringify(contents));
-
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
@@ -32,7 +25,6 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
     });
 
     if (!response || !response.text) {
-      console.error("Incomplete response from Gemini:", response);
       return "Lo siento, no pude procesar tu solicitud en este momento.";
     }
 
@@ -50,7 +42,11 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
       throw new Error("Límite excedido. Reintenta en unos minutos.");
     }
     
-    // Return the actual error message for debugging since the user is seeing the generic one
+    // Check for the specific permission denied error
+    if (errorMessage.includes("PERMISSION_DENIED")) {
+      throw new Error("Error de permisos: El sistema no tiene acceso al modelo en este momento. Estamos trabajando en ello.");
+    }
+    
     throw new Error(`Error de IA: ${errorMessage}`);
   }
 };
@@ -58,7 +54,7 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
 export const generateCaseStudy = async (topic: string) => {
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: `Genera un caso clínico breve sobre el tema: ${topic}. Incluye historia clínica, hallazgos de laboratorio y 3 preguntas de razonamiento clínico. Basado en Murray, Oubiña y Apt Baruch.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
