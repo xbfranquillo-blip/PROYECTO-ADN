@@ -40,17 +40,18 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
   } catch (error: any) {
     console.error("Detailed Client Gemini Error:", error);
     
-    if (error.message?.includes("API key")) {
-      throw new Error("Error de configuración: La clave de API no es válida o falta.");
+    // Extract a more descriptive message if possible
+    const errorMessage = error.message || String(error);
+    
+    if (errorMessage.includes("API key")) {
+      throw new Error("Error de configuración: Clave de API no válida.");
     }
-    if (error.message?.includes("quota") || error.message?.includes("429")) {
-      throw new Error("Límite de consultas excedido. Por favor, intenta más tarde.");
-    }
-    if (error.message?.includes("model") && error.message?.includes("not found")) {
-      throw new Error("Error de modelo: El modelo solicitado no está disponible.");
+    if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+      throw new Error("Límite excedido. Reintenta en unos minutos.");
     }
     
-    throw new Error("Error al conectar con el asistente de IA. Por favor, reintenta.");
+    // Return the actual error message for debugging since the user is seeing the generic one
+    throw new Error(`Error de IA: ${errorMessage}`);
   }
 };
 
