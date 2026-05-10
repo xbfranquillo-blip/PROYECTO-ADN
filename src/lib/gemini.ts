@@ -1,20 +1,26 @@
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const SYSTEM_INSTRUCTION = "Actúa como un profesor experto de Agentes de Defensa, Mecanismo y Nutrición. Tu misión es sintetizar información de Murray (Microbiología), Apt Baruch (Parasitología) y Oubiña (Virología). Responde con rigor científico, brevedad y claridad. Cita las fuentes cuando sea posible.";
+
 export const chatWithAI = async (message: string, history: any[] = []) => {
   try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message, history }),
+    const contents = [
+      { role: 'user', parts: [{ text: SYSTEM_INSTRUCTION }]},
+      ...(history || []).map(h => ({
+        role: h.role === 'user' ? 'user' : 'model',
+        parts: [{ text: h.parts?.[0]?.text || h.text || "" }]
+      })),
+      { role: 'user', parts: [{ text: message }]}
+    ];
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "Error al conectar con el servidor de IA");
-    }
-
-    const data = await response.json();
-    return data.text;
+    return response.text;
   } catch (error: any) {
     console.error("Client Gemini Error:", error);
     throw error;
@@ -23,21 +29,19 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
 
 export const generateCaseStudy = async (topic: string) => {
   try {
-    const response = await fetch("/api/case-study", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ topic }),
+    const prompt = `Genera un caso clínico breve de parasitología o microbiología sobre ${topic || "un parásito común"}. 
+    Incluye: 
+    1. Historia clínica (Edad, síntomas, antecedente epidemiológico).
+    2. Hallazgos de laboratorio (Hemograma, EPSD).
+    3. Preguntas de razonamiento para el alumno (Mecanismo, Diagnóstico, Nutrición).
+    Básate en Apt Baruch o Murray.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "Error al generar el caso clínico");
-    }
-
-    const data = await response.json();
-    return data.text;
+    return response.text;
   } catch (error) {
     console.error("Client Case Gen Error:", error);
     throw error;
