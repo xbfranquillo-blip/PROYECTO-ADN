@@ -28,8 +28,11 @@ import { ACADEMIC_DATA, type AcademicEntry } from './types';
 import { MicroBackground } from './components/MicroBackground';
 import { chatWithAI, generateCaseStudy } from './lib/gemini';
 
+import { auth, loginWithGoogle, deductToken } from './lib/firebase';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+
 // Components
-const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: any) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen, user }: any) => {
   // Helper to use Microscope for both but with different nuance
   const microscopeIcon = Microscope;
 
@@ -699,7 +702,7 @@ const Nutrition = () => (
   </div>
 );
 
-const Theory = ({ category }: { category: string }) => {
+const Theory = ({ category, user }: { category: string, user: User | null }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<AcademicEntry | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -923,7 +926,7 @@ const Theory = ({ category }: { category: string }) => {
 };
 
 
-const Cases = () => {
+const Cases = ({ user }: { user: User | null }) => {
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
@@ -985,7 +988,7 @@ const Cases = () => {
   );
 };
 
-const Chat = () => {
+const Chat = ({ user }: { user: User | null }) => {
   const [messages, setMessages] = useState<{role: 'user' | 'model', parts: {text: string}[]}[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1086,17 +1089,19 @@ const Chat = () => {
   );
 };
 
-const Login = ({ onLogin }: { onLogin: () => void }) => {
-  const [code, setCode] = useState('');
-  const [error, setError] = useState(false);
+const Login = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (code === 'ADN2026') {
-      onLogin();
-    } else {
-      setError(true);
-      setTimeout(() => setError(false), 2000);
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithGoogle();
+    } catch (e: any) {
+      setError(e.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1116,28 +1121,18 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           <p className="text-slate-500 text-sm font-medium">Agentes de Defensa, Mecanismo y Nutrición</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Código de acceso" 
-              className={cn(
-                "w-full pl-12 pr-4 py-4 bg-slate-50 border-2 rounded-2xl outline-none transition-all font-bold tracking-widest uppercase",
-                error ? "border-red-400 animate-shake" : "border-slate-100 focus:border-emerald-600 focus:bg-white"
-              )}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </div>
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">Accede con tu cuenta institucional para comenzar tu estudio.</p>
           <button 
-            type="submit"
-            className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all shadow-xl shadow-emerald-100"
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-900 transition-all shadow-xl shadow-emerald-100 disabled:opacity-50"
           >
-            INGRESAR AL SISTEMA
-            <ArrowRight size={20} />
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <Dna size={20} />}
+            INGRESAR CON GOOGLE
           </button>
-        </form>
+          {error && <p className="text-xs text-red-500 font-bold">{error}</p>}
+        </div>
 
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-8">Proyecto Educativo 2026</p>
       </motion.div>
@@ -1146,11 +1141,30 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
 };
 
 export default function App() {
-  const [isLogged, setIsLogged] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('intro');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  if (!isLogged) return <Login onLogin={() => setIsLogged(true)} />;
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthLoading(false);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  if (authLoading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-emerald-900">
+      <Loader2 className="animate-spin text-emerald-400" size={48} />
+    </div>
+  );
+
+  if (!user) return <Login />;
+
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
@@ -1161,6 +1175,7 @@ export default function App() {
           setActiveTab={setActiveTab} 
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
+          user={user}
         />
         
         <main className="flex-1 flex flex-col overflow-hidden relative">
@@ -1182,9 +1197,18 @@ export default function App() {
             </h2>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-bold text-emerald-400/60 tracking-wider">SISTEMA ACTIVO</span>
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-white/10 rounded-lg text-emerald-400 transition-colors"
+              title="Cerrar Sesión"
+            >
+              <X size={20} />
+            </button>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-bold text-emerald-400/60 tracking-wider">SISTEMA ACTIVO</span>
+            </div>
           </div>
         </header>
 
@@ -1198,11 +1222,11 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'intro' && <Welcome />}
-              {['inmunidad', 'virus', 'bacterias', 'hongos', 'parasitos'].includes(activeTab) && <Theory category={activeTab} />}
+              {['inmunidad', 'virus', 'bacterias', 'hongos', 'parasitos'].includes(activeTab) && <Theory category={activeTab} user={user} />}
               {activeTab === 'nutricion' && <Nutrition />}
               {activeTab === 'diagnostico' && <DiagnosticMethods />}
-              {activeTab === 'cases' && <Cases />}
-              {activeTab === 'chat' && <Chat />}
+              {activeTab === 'cases' && <Cases user={user} />}
+              {activeTab === 'chat' && <Chat user={user} />}
             </motion.div>
           </AnimatePresence>
         </div>
