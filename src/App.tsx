@@ -730,7 +730,7 @@ const Theory = ({ category }: { category: string }) => {
       setAiResponse(response || '');
     } catch (e) {
       console.error(e);
-      setAiResponse('Error al consultar al experto. Reintenta.');
+      setAiResponse(e instanceof Error ? e.message : 'Error al consultar al experto. Reintenta.');
     } finally {
       setAiLoading(false);
     }
@@ -936,6 +936,7 @@ const Cases = () => {
       setResult(content || '');
     } catch (e) {
       console.error(e);
+      setResult(e instanceof Error ? e.message : 'Error al generar el caso clínico.');
     } finally {
       setLoading(false);
     }
@@ -1010,6 +1011,7 @@ const Chat = () => {
       setMessages([...newMessages, { role: 'model' as const, parts: [{ text: responseText || '' }] }]);
     } catch (e) {
       console.error(e);
+      setMessages([...newMessages, { role: 'model' as const, parts: [{ text: `Error: ${e instanceof Error ? e.message : 'No se pudo obtener respuesta.'}` }] }]);
     } finally {
       setLoading(false);
     }
