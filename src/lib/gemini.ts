@@ -4,6 +4,11 @@ const SYSTEM_INSTRUCTION = "Actúa como un profesor experto de Agentes de Defens
 
 // Initialize Gemini directly in the frontend as per skill guidelines
 // The platform shims process.env.GEMINI_API_KEY automatically for React/Vite apps
+if (!process.env.GEMINI_API_KEY) {
+  console.error("GEMINI_API_KEY is missing in the browser environment.");
+} else {
+  console.log("GEMINI_API_KEY is present (length: " + process.env.GEMINI_API_KEY.length + ")");
+}
 const aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export const chatWithAI = async (message: string, history: any[] = []) => {
@@ -17,7 +22,7 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
     ];
 
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
@@ -55,7 +60,7 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
 export const generateCaseStudy = async (topic: string) => {
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: `Genera un caso clínico breve sobre el tema: ${topic}. Incluye historia clínica, hallazgos de laboratorio y 3 preguntas de razonamiento clínico. Basado en Murray, Oubiña y Apt Baruch.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
