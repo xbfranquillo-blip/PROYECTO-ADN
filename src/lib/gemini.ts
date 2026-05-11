@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const SYSTEM_INSTRUCTION = "Actúa como un profesor experto de Agentes de Defensa, Mecanismo y Nutrición. Tu misión es sintetizar información de Murray (Microbiología), Apt Baruch (Parasitología) y Oubiña (Virología). Responde con rigor científico, brevedad y claridad. Cita las fuentes cuando sea posible.";
+const SYSTEM_INSTRUCTION = "Eres el Tutor Experto del PROYECTO ADN (Agentes de Defensa, Mecanismo y Nutrición). Tu misión es proporcionar explicaciones precisas, académicas y pedagógicas sobre Microbiología, Parasitología, Virología e Inmunidad. Debes basar tus respuestas estrictamente en la bibliografía clásica: Murray (Microbiología), Apt Baruch (Parasitología) y Oubiña (Virología). Utiliza un tono profesional pero accesible. Responde siempre en español. No inventes datos; si no tienes información sobre un tema específico en estas fuentes, indícalo cordialmente.";
 
 // The platform shims process.env.GEMINI_API_KEY automatically for React/Vite apps
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
@@ -16,7 +16,7 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
     ];
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
@@ -52,7 +52,7 @@ export const chatWithAI = async (message: string, history: any[] = []) => {
 export const generateCaseStudy = async (topic: string) => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: `Genera un caso clínico breve sobre el tema: ${topic}. Incluye historia clínica, hallazgos de laboratorio y 3 preguntas de razonamiento clínico. Basado en Murray, Oubiña y Apt Baruch.`,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION
