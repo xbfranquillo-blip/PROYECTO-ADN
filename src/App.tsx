@@ -119,9 +119,9 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: any) => {
 const Welcome = () => (
   <div className="max-w-4xl mx-auto space-y-8">
     <div className="space-y-4">
-      <h2 className="text-4xl font-bold text-slate-900 tracking-tight">Bienvenido a PROYECTO ADN</h2>
+      <h2 className="text-4xl font-bold text-slate-900 tracking-tight">Bienvenido a ADN 2026</h2>
       <p className="text-lg text-slate-600">
-        Agentes de Defensa, Mecanismo y Nutrición. Esta plataforma está diseñada para optimizar tu tiempo de estudio
+        Agentes de Defensa, Mecanismo y Nutrición (Sistema Legado). Esta plataforma está diseñada para optimizar tu tiempo de estudio
         mediante la síntesis rigurosa de bibliografía clásica.
       </p>
     </div>
@@ -1112,7 +1112,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-xl shadow-emerald-100 border border-emerald-50 transform -rotate-6">
             <Microscope size={32} />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">PROYECTO ADN</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">ADN 2026</h1>
           <p className="text-slate-500 text-sm font-medium">Agentes de Defensa, Mecanismo y Nutrición</p>
         </div>
 
